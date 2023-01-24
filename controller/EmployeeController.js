@@ -1,6 +1,7 @@
 const router=require('express').Router()
 const Employee=require('../model-employee/Employee')
 const fs=require('fs')
+const Validation=require('../validation/EmployeeValidation')
 const multer=require('multer')
 const storage=multer.diskStorage({
     destination:(req,file,cb)=>{
@@ -15,6 +16,11 @@ const upload=multer({storage:storage})
 
 
 router.post('/add-new',upload.single('profile'),async(req,res)=>{
+    const {error}=Validation.validate(req.body)
+    if(error){
+        res.status(501).send(error)
+    }
+
     const employee=new Employee({
         fname:req.body.fname,
         lname:req.body.lname,
@@ -55,17 +61,17 @@ router.get('/list/:id',async(req,res)=>{
     }
 })
 
-router.put('/edit/:id',async(req,res)=>{
+router.put('/edit/:id',upload.single('profile'),async(req,res)=>{
     const id=req.params.id
     const employee=await Employee.findByIdAndUpdate({_id:id},{$set:{
         profile:{
-            data:fs.readFileSync('uploaded-img'+req.file.filename),
-            contentType:"image/*"
+            data:fs.readFileSync('uploaded-img/'+req.file.filename),
+            contentType:'image/*'
         }
         
     }})
     if(employee){
-        res.status(200).json("message","Profile updated successful")
+        res.send("Profile updated successful")
     }else{
         res.status(501).json("message",`an employee with ID${id} does not exists`)
     }
